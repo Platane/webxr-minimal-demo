@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "module": "es2022",
+    "target": "es2023",
+    "lib": ["dom", "es2023"],
+    "strict": true
+  },
+  "exclude": ["node_modules"]
+}
