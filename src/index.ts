@@ -69,7 +69,7 @@ document.addEventListener("resize", onResize, {});
 
     let cancel: number;
 
-    const lightProbe = await session?.requestLightProbe();
+    const lightProbe = await (session as any)?.requestLightProbe();
 
     const onXRFrame = (t: number, frame: XRFrame) => {
       const glLayer = session.renderState.baseLayer!;
@@ -78,8 +78,8 @@ document.addEventListener("resize", onResize, {});
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, glLayer.framebuffer);
 
-      if (frame.getLightEstimate && lightProbe) {
-        const lightEstimate = frame.getLightEstimate(lightProbe);
+      if ((frame as any).getLightEstimate && lightProbe) {
+        const lightEstimate = (frame as any).getLightEstimate(lightProbe);
 
         if (lightEstimate) {
           const intensity = Math.max(
