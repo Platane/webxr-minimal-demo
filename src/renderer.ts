@@ -152,8 +152,7 @@ void main() {
   };
 
   const onResize = () => {
-    // const dpr = Math.min(window.devicePixelRatio ?? 1, 2);
-    const dpr = 1;
+    const dpr = Math.min(window.devicePixelRatio ?? 1, 2);
 
     const { width, height } = canvas.getBoundingClientRect();
 
@@ -162,8 +161,6 @@ void main() {
 
     canvas.width = w;
     canvas.height = h;
-
-    console.log("resize", width, height);
 
     gl.viewport(0, 0, w, h);
   };
