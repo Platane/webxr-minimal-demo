@@ -1,3 +1,5 @@
+import { mat4 } from "gl-matrix";
+
 /**
  * very simple shader program to render a list of points as pyramids
  */
@@ -70,16 +72,16 @@ void main() {
   {
     //prettier-ignore
     const positions = [
-      0.0, 1, 0.0,
-      0.0, 0.0, 1,
+      0.0, 1.0, 0.0,
+      0.0, 0.0, 1.0,
       0.0, 0.0, 0.0,
 
-      0.0, 1, 0.0,
-      1, 0.0, 0.0,
+      0.0, 1.0, 0.0,
+      1.0, 0.0, 0.0,
       0.0, 0.0, 0.0,
 
-      0.0, 0.0, 1,
-      1, 0.0, 0.0,
+      0.0, 0.0, 1.0,
+      1.0, 0.0, 0.0,
       0.0, 0.0, 0.0,
     ];
 
@@ -118,10 +120,13 @@ void main() {
   gl.bindVertexArray(null);
 
   const render = (
-    projectionMatrix: ArrayLike<number> | Float32Array,
-    viewMatrix: ArrayLike<number> | Float32Array,
-    models: (ArrayLike<number> | Float32Array)[]
+    viewport: { x: number; y: number; width: number; height: number },
+    projectionMatrix: Float32Array,
+    viewMatrix: Float32Array,
+    models: Float32Array[]
   ) => {
+    gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
+
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.enable(gl.DEPTH_TEST);
@@ -135,15 +140,11 @@ void main() {
 
     gl.bindVertexArray(vao);
 
-    gl.uniformMatrix4fv(
-      u_projectionMatrix,
-      false,
-      new Float32Array(projectionMatrix)
-    );
-    gl.uniformMatrix4fv(u_viewMatrix, false, new Float32Array(viewMatrix));
+    gl.uniformMatrix4fv(u_projectionMatrix, false, projectionMatrix);
+    gl.uniformMatrix4fv(u_viewMatrix, false, viewMatrix);
 
     for (const m of models) {
-      gl.uniformMatrix4fv(u_modelMatrix, false, new Float32Array(m));
+      gl.uniformMatrix4fv(u_modelMatrix, false, m);
       gl.drawArrays(gl.TRIANGLES, 0, 9);
     }
 
@@ -151,13 +152,18 @@ void main() {
   };
 
   const onResize = () => {
-    const dpr = Math.min(window.devicePixelRatio ?? 1, 2);
+    // const dpr = Math.min(window.devicePixelRatio ?? 1, 2);
+    const dpr = 1;
 
-    const w = window.innerWidth * dpr;
-    const h = window.innerHeight * dpr;
+    const { width, height } = canvas.getBoundingClientRect();
+
+    const w = width * dpr;
+    const h = height * dpr;
 
     canvas.width = w;
     canvas.height = h;
+
+    console.log("resize", width, height);
 
     gl.viewport(0, 0, w, h);
   };

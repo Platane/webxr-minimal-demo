@@ -2,7 +2,6 @@ import { vec3, mat4 } from "gl-matrix";
 import { createRenderer } from "./renderer";
 
 const root = document.getElementById("root")!;
-const overlay = document.getElementById("overlay")!;
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2", { xrCompatible: true })!;
 
@@ -27,18 +26,18 @@ document.addEventListener("resize", onResize, {});
     const session = await navigatorXR.requestSession("immersive-ar", {
       optionalFeatures: [
         "dom-overlay",
-        "hit-test",
+        // "hit-test",
         "local-floor",
         "light-estimation",
       ],
       domOverlay: { root: root },
     });
 
-    gl.makeXRCompatible().then(() => {
-      session.updateRenderState({
-        baseLayer: new XRWebGLLayer(session, gl),
-      });
-    });
+    await gl.makeXRCompatible();
+
+    session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+
+    onResize();
 
     let localReferenceSpace: XRReferenceSpace;
 
@@ -57,23 +56,8 @@ document.addEventListener("resize", onResize, {});
       });
     });
 
-    let viewerReferenceSpace: XRReferenceSpace;
-
-    session.requestReferenceSpace("viewer").then(async (r) => {
-      viewerReferenceSpace = r;
-
-      // xrViewerSpace = refSpace;
-      const o = await session.requestHitTestSource?.({ space: r });
-
-      const ray = new XRRay();
-
-      // .then((hitTestSource) => {
-      //   xrHitTestSource = hitTestSource;
-      // });
-    });
-
     session.addEventListener("select", (event) => {
-      console.log("select", event.inputSource);
+      // console.log("select", event);
     });
 
     let poseFoundOnce = false;
@@ -108,8 +92,6 @@ document.addEventListener("resize", onResize, {});
           const r = lightEstimate.primaryLightIntensity.x / intensity;
           const g = lightEstimate.primaryLightIntensity.y / intensity;
           const b = lightEstimate.primaryLightIntensity.z / intensity;
-
-          console.log(r, g, b);
         }
       }
 
@@ -119,11 +101,8 @@ document.addEventListener("resize", onResize, {});
           poseFoundOnce = true;
         }
 
-        // Loop through each of the views reported by the frame and draw them
-        // into the corresponding viewport.
-
         const view = pose.views[0];
-        const viewport = glLayer.getViewport(view);
+        const viewport = glLayer.getViewport(view)!;
 
         mat4.multiply(projectionMatrix, depthCorrection, view.projectionMatrix);
 
@@ -157,7 +136,7 @@ document.addEventListener("resize", onResize, {});
               m,
               [0, 0, 0, 1],
               o,
-              [0.1, 0.1, 0.1]
+              [0.05, 0.05, 0.05]
             );
 
             planted.push(m);
@@ -168,9 +147,10 @@ document.addEventListener("resize", onResize, {});
 
         render(
           //
-          projectionMatrix,
+          viewport,
+          projectionMatrix as Float32Array,
           view.transform.inverse.matrix,
-          [origin, ...planted]
+          [origin, ...planted] as Float32Array[]
         );
       }
 
@@ -179,10 +159,12 @@ document.addEventListener("resize", onResize, {});
 
     cancel = session.requestAnimationFrame(onXRFrame);
 
-    document.addEventListener("click", ({ pageX, pageY }) => {
+    document.addEventListener("click", ({ clientX, clientY }) => {
+      const { top, left, width, height } = canvas.getBoundingClientRect();
+
       clicked = {
-        x: (pageX / window.innerWidth) * 2 - 1,
-        y: -((pageY / window.innerHeight) * 2 - 1),
+        x: ((clientX - left) / width) * 2 - 1,
+        y: -(((clientY - top) / height) * 2 - 1),
       };
     });
 
