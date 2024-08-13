@@ -1,19 +1,12 @@
 import { vec3, mat4 } from "gl-matrix";
-import { createRenderer } from "./render";
-
-//
-//
-//
+import { createRenderer } from "./renderer";
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const root = document.getElementById("root")!;
 const gl = canvas.getContext("webgl2", { xrCompatible: true })!;
 
 const { render, onResize } = createRenderer(canvas, gl);
-
 document.addEventListener("resize", onResize, {});
-
-document.body.appendChild(canvas);
 
 (async () => {
   const origin = mat4.create();
