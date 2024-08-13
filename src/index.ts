@@ -1,8 +1,9 @@
 import { vec3, mat4 } from "gl-matrix";
 import { createRenderer } from "./renderer";
 
-const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const root = document.getElementById("root")!;
+const overlay = document.getElementById("overlay")!;
+const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2", { xrCompatible: true })!;
 
 const { render, onResize } = createRenderer(canvas, gl);
@@ -23,7 +24,15 @@ document.addEventListener("resize", onResize, {});
   }
 
   const init = async () => {
-    const session = await navigatorXR.requestSession("immersive-ar");
+    const session = await navigatorXR.requestSession("immersive-ar", {
+      optionalFeatures: [
+        "dom-overlay",
+        "hit-test",
+        "local-floor",
+        "light-estimation",
+      ],
+      domOverlay: { root: root },
+    });
 
     gl.makeXRCompatible().then(() => {
       session.updateRenderState({
@@ -31,21 +40,40 @@ document.addEventListener("resize", onResize, {});
       });
     });
 
-    let referenceSpace: XRReferenceSpace | XRBoundedReferenceSpace;
+    let localReferenceSpace: XRReferenceSpace;
 
-    session.requestReferenceSpace("local").then((r) => {
-      referenceSpace = r;
+    session.requestReferenceSpace("local-floor").then((r) => {
+      localReferenceSpace = r;
 
-      referenceSpace.addEventListener("reset", (evt) => {
+      localReferenceSpace.addEventListener("reset", (evt) => {
         console.log("reset");
         if (evt.transform) {
           // AR experiences typically should stay grounded to the real world.
           // If there's a known origin shift, compensate for it here.
-          referenceSpace = referenceSpace.getOffsetReferenceSpace(
+          localReferenceSpace = localReferenceSpace.getOffsetReferenceSpace(
             evt.transform
           );
         }
       });
+    });
+
+    let viewerReferenceSpace: XRReferenceSpace;
+
+    session.requestReferenceSpace("viewer").then(async (r) => {
+      viewerReferenceSpace = r;
+
+      // xrViewerSpace = refSpace;
+      const o = await session.requestHitTestSource?.({ space: r });
+
+      const ray = new XRRay();
+
+      // .then((hitTestSource) => {
+      //   xrHitTestSource = hitTestSource;
+      // });
+    });
+
+    session.addEventListener("select", (event) => {
+      console.log("select", event.inputSource);
     });
 
     let poseFoundOnce = false;
@@ -57,11 +85,33 @@ document.addEventListener("resize", onResize, {});
 
     let cancel: number;
 
+    const lightProbe = await session?.requestLightProbe();
+
     const onXRFrame = (t: number, frame: XRFrame) => {
       const glLayer = session.renderState.baseLayer!;
-      const pose = referenceSpace && frame.getViewerPose(referenceSpace);
+      const pose =
+        localReferenceSpace && frame.getViewerPose(localReferenceSpace);
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, glLayer.framebuffer);
+
+      if (frame.getLightEstimate && lightProbe) {
+        const lightEstimate = frame.getLightEstimate(lightProbe);
+
+        if (lightEstimate) {
+          const intensity = Math.max(
+            1.0,
+            lightEstimate.primaryLightIntensity.x,
+            lightEstimate.primaryLightIntensity.y,
+            lightEstimate.primaryLightIntensity.z
+          );
+
+          const r = lightEstimate.primaryLightIntensity.x / intensity;
+          const g = lightEstimate.primaryLightIntensity.y / intensity;
+          const b = lightEstimate.primaryLightIntensity.z / intensity;
+
+          console.log(r, g, b);
+        }
+      }
 
       if (pose) {
         if (!poseFoundOnce) {
