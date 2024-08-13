@@ -19,7 +19,7 @@ jobs:
       - run: bun install --frozen-lockfile
 
       - run: bun type
-      - run: bun vite build --minify=false --sourcemap=true
+      - run: bun vite build --minify=false --sourcemap=true --base=./
 
       - uses: actions/upload-pages-artifact@v3
         with:
