@@ -1,3 +1,11 @@
+/**
+ * webgl program to draw simple colored meshes
+ * ```ts
+ * const { render, createModelRenderer } = createRenderer(gl);
+ * const cubeRenderer = createModelRenderer(cube);
+ * render(projectionMatrix, viewMatrix, () => cubeRenderer.draw(modelMatrix));
+ * ```
+ */
 export const createRenderer = (gl: WebGL2RenderingContext) => {
 	const vertexShaderCode = `
     #version 300 es
