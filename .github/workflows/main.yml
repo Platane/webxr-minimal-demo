@@ -31,8 +31,9 @@ jobs:
             bunx vite build src/$FILE --base $BASE_URL/$FILE --minify false --outDir ../../dist/$FILE
           done
 
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
       - uses: actions/deploy-pages@v4
+        if: github.ref == 'refs/heads/main'
         id: deployment
